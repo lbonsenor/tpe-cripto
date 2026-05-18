@@ -16,7 +16,7 @@ read_bmp(const char* filename) {
     fread(&info_header, sizeof(BMPInfoHeader), 1, file);
 
     // Validación de formato 8-bit
-    if (file_header.type != 0x4D42 || info_header.bits_per_pixel != 8) {
+    if (file_header.type != BMP_TYPE_BM || info_header.bits_per_pixel != 8) {
         fprintf(stderr, "Error: No es un tipo de BMP válido\n");
         fclose(file);
         return NULL;

@@ -16,7 +16,8 @@ BIN_DIR = bin
 SRCS    = $(wildcard $(SRC_DIR)/*.c)            \
           $(wildcard $(SRC_DIR)/args/*.c)       \
           $(wildcard $(SRC_DIR)/algorithm/*.c)  \
-          $(wildcard $(SRC_DIR)/permutation/*.c)
+          $(wildcard $(SRC_DIR)/permutation/*.c)\
+          $(wildcard $(SRC_DIR)/bmp/*.c)
 
 # Aplana la ruta al reemplazar src/<subdir>/foo.c → obj/<subdir>/foo.o
 OBJS    = $(patsubst $(SRC_DIR)/%.c, $(OBJ_DIR)/%.o, $(SRCS))
