@@ -14,11 +14,11 @@
 #define BMP_TYPE_PT 0x5450 // OS/2 pointer
 
 typedef struct {
-    uint16_t type;
+    uint16_t type; // Must be 0x4D42 ('BM')
     uint32_t size;
     uint16_t reserved1;
     uint16_t reserved2;
-    uint32_t offset;
+    uint32_t offset; // CRITICAL: This tells us exactly where the pixels start
 } BMPFileHeader;
 
 typedef struct {
@@ -26,7 +26,7 @@ typedef struct {
     int32_t width;
     int32_t height;
     uint16_t planes;
-    uint16_t bits_per_pixel;
+    uint16_t bits_per_pixel; // This MUST be 8 now!
     uint32_t compression;
     uint32_t image_size;
     int32_t x_pixels_per_m;
@@ -35,18 +35,12 @@ typedef struct {
     uint32_t colors_important;
 } BMPInfoHeader;
 
-typedef struct {
-    uint8_t R;
-    uint8_t G;
-    uint8_t B;
-} Pixel;
-
 #pragma pack(pop)
 
 typedef struct {
     int32_t width;
     int32_t height;
-    Pixel* data;
+    uint8_t* data; // 1D array of single bytes (grayscale values)
 } BMPImage;
 
 /// @brief Parses a file to the BMP image struct
