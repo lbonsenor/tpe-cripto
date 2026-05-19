@@ -56,7 +56,7 @@ distribute(BMPImage* img, int k, int n, char s_paths[MAX_CARRIERS][256]) {
         Step 2.
         Set the current processing section number j to 1.
     */
-    int section_num = 0;
+    int32_t section_num = 0;
 
     /*
         Step 3.
@@ -66,7 +66,7 @@ distribute(BMPImage* img, int k, int n, char s_paths[MAX_CARRIERS][256]) {
 
         fj(x)=(a0+ a1x+ a2x2+…+ ar-1xr-1) mod 257.
     */
-    uint32_t img_size = r_img->width * r_img->height;
+    int32_t img_size = r_img->width * r_img->height;
 
     /*
         Step 7. Increase j by 1. 
@@ -198,7 +198,6 @@ bits_for_k(int k) {
     k=4,5,6,7   -> 2 LSB of 4 pixels are modified
     k=2,3       -> 4 LSB of 2 pixels are modified
 */
-
 void
 modify_carriers(BMPImage* carriers[MAX_CARRIERS], int k, int n, uint8_t shadow_pixels[n], int section_num) {
     int bits_per_pixel  = bits_for_k(k);
