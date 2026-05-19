@@ -2,8 +2,12 @@
 #include <stdint.h>
 #include <stdlib.h>
 
+#include "args.h"
 #include "bmp.h"
 #include "permutation.h"
+
+int
+load_carriers(BMPImage* carriers[MAX_CARRIERS], int n, char s_paths[MAX_CARRIERS][256]);
 
 void
 generate_table(uint8_t* table, int32_t width, int32_t height);
@@ -20,8 +24,13 @@ evaluate_polynomial(uint8_t* coef_arr, int degree, int x);
 void
 process_shadows(uint8_t* shadows, int n, uint8_t* section, int k);
 
-void
-distribute(BMPImage* img, int k, int n) {
+int
+distribute(BMPImage* img, int k, int n, char s_paths[MAX_CARRIERS][256]) {
+    BMPImage* carriers[MAX_CARRIERS];
+    if (load_carriers(carriers, n, s_paths) == -1) {
+        return -1;
+    }
+
     /* 
         Step 1. 
         Take the XOR operation to a pre-defined random table R and O. 
@@ -70,6 +79,24 @@ distribute(BMPImage* img, int k, int n) {
         uint8_t shadow_pixels[n];
         process_shadows(shadow_pixels, n, processed_section, k);
     }
+
+    return ERR_OK;
+}
+
+int
+load_carriers(BMPImage* carriers[MAX_CARRIERS], int n, char s_paths[MAX_CARRIERS][256]) {
+    for (int i = 0; i < n; i++) {
+        carriers[i] = read_bmp(s_paths[i]);
+        if (!carriers[i]) {
+            // Clean up previously loaded images
+            for (int prev = 0; prev < i; prev++) {
+                free(carriers[prev]->data);
+                free(carriers[prev]);
+            }
+            return -1;
+        }
+    }
+    return 0;
 }
 
 // Random Table R
