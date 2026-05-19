@@ -18,7 +18,7 @@ typedef struct {
     uint32_t size;
     uint16_t reserved1;
     uint16_t reserved2;
-    uint32_t offset; // CRITICAL: This tells us exactly where the pixels start
+    uint32_t offset;
 } BMPFileHeader;
 
 typedef struct {
@@ -26,7 +26,7 @@ typedef struct {
     int32_t width;
     int32_t height;
     uint16_t planes;
-    uint16_t bits_per_pixel; // This MUST be 8 now!
+    uint16_t bits_per_pixel;
     uint32_t compression;
     uint32_t image_size;
     int32_t x_pixels_per_m;
@@ -49,8 +49,15 @@ typedef struct {
 BMPImage*
 read_bmp(const char* filename);
 
+/// @brief Writes a BMP file based on a given BMPImage
+/// @param img
+/// @param filename
+/// @return 0 if success
 int
 write_bmp(BMPImage* img, const char* filename);
+
+int
+write_shadow_metadata(const char* path, uint16_t seed, uint16_t shadow_id);
 
 /// @brief Liberates the BMPImage from memory
 /// @param image

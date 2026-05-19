@@ -7,13 +7,13 @@
 
 static int64_t seed;
 
-/// @brief Inicializa la `seed` a partir de un numero dado
-/// @param s El numero con el que se calculará `seed`
+/// @brief Initializes the seed based on a given number
+/// @param s
 void
 setSeed(int64_t s);
 
-/// @brief Calcula un unsigned `char` pseudoaleatorio
-/// @return El caracter calculado
+/// @brief Calculates a pseudorandom character
+/// @return The calculated character
 uint8_t
 nextChar(void);
 

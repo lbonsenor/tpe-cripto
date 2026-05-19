@@ -39,30 +39,31 @@ typedef struct {
     char* dir;         /* Directorio de portadoras (default: ".")    */
 } Args;
 
-/// @brief Parsea argc/argv y rellena la estructura Args.
+/// @brief Parses argc/argv into a Args struct
 /// @param argc
 /// @param argv
 /// @param out
-/// @return Devuelve ERR_OK en caso de éxito o un código de error en caso contrario. En caso de error imprime un mensaje descriptivo y la sintaxis correcta.
+/// @retval ERR_OK
+/// @retval ERR_CODE if failed. If so it prints the error message
 int
 parse_args(int argc, char* argv[], Args* out);
 
-/// @brief Verifica si en el directorio provisto hay una cantidad correcta de sombras validas, en ese caso, retorna las ubicaciones validas
+/// @brief Verifies if the directory given has the right amount of valid shadows, if so, it puts the valid paths in `s_paths`
 /// @param args
-/// @param s_img La imagen secreta
-/// @param s_paths Puntero para escribir las ubicaciones de las sombras
-/// @return n la cantidad de sombras validas
-/// @return 0 si no pudo encontrar
-/// @return -1 si hubo un error
+/// @param s_img The secret image
+/// @param s_paths Paths pointer
+/// @retval - n: The amount of valid shadows found.
+/// @retval - 0: If no valid shadows could be found.
+/// @retval - -1: If an error has occurred.
 int
 verify_directory(Args* args, BMPImage* s_img, char s_paths[MAX_CARRIERS][256]);
 
-/// @brief Imprime la sintaxis de uso del programa.
+/// @brief Prints the program's usage syntax.
 /// @param program_name
 void
 print_usage(const char* program_name);
 
-/// @brief Imprime el mensaje correspondiente al código de error dado.
+/// @brief Prints the message according to the given error code.
 /// @param error_code
 void
 print_error(int error_code);

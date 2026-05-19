@@ -119,6 +119,27 @@ write_bmp(BMPImage* image, const char* filename) {
     return 0;
 }
 
+int
+write_shadow_metadata(const char* path, uint16_t seed, uint16_t shadow_id) {
+    FILE* file = fopen(path, "r+b");
+    if (!file)
+        return -1;
+
+    // Navigate to Byte 6 (Reserved 1)
+    fseek(file, 6, SEEK_SET);
+    // Write Seed (Takes up 2 bytes)
+    fwrite(&seed, sizeof(uint16_t), 1, file);
+
+    // Navigate to Byte 8 (Reserved 2)
+    fseek(file, 8, SEEK_SET);
+    // Write Shadow Order Identification Number (Takes up 2 bytes)
+    fwrite(&shadow_id, sizeof(uint16_t), 1, file);
+
+    fclose(file);
+
+    return 0;
+}
+
 void
 free_bmp(BMPImage* image) {
     if (image) {
