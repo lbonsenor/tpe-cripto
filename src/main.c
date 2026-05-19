@@ -4,6 +4,7 @@
 #include <string.h>
 #include <strings.h>
 
+#include "algorithm.h"
 #include "args.h"
 #include "bmp.h"
 
@@ -34,8 +35,23 @@ main(int argc, char* argv[]) {
     }
     printf("Dir     : %s\n", args.dir);
 
+    switch (args.mode) {
+        case MODE_DISTRIBUTE: {
+            BMPImage* img = read_bmp(args.secret_path);
+
+            char s_paths[MAX_CARRIERS][256];
+            verify_directory(&args, img, s_paths);
+
+            distribute(img, args.k, args.n, s_paths);
+            break;
+        }
+
+        default:
+            break;
+    }
+
     /* TODO: llamar a distribute() o recover() según args.mode */
-    test_path(&args);
+    // test_path(&args);
 
     return ERR_OK;
 }

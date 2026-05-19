@@ -1,9 +1,9 @@
 
 #include <stdint.h>
+#include <stdio.h>
 #include <stdlib.h>
 
-#include "args.h"
-#include "bmp.h"
+#include "algorithm.h"
 #include "permutation.h"
 
 int
@@ -23,6 +23,12 @@ evaluate_polynomial(uint8_t* coef_arr, int degree, int x);
 
 void
 process_shadows(uint8_t* shadows, int n, uint8_t* section, int k);
+
+void
+modify_carriers(BMPImage* carriers[MAX_CARRIERS], int k, int n, uint8_t shadow_pixels[n], int section_num);
+
+void
+save_shadows(char s_paths[MAX_CARRIERS][256], BMPImage* carriers[MAX_CARRIERS], int n);
 
 int
 distribute(BMPImage* img, int k, int n, char s_paths[MAX_CARRIERS][256]) {
@@ -78,8 +84,14 @@ distribute(BMPImage* img, int k, int n, char s_paths[MAX_CARRIERS][256]) {
         */
         uint8_t shadow_pixels[n];
         process_shadows(shadow_pixels, n, processed_section, k);
-    }
 
+        /*
+            Step 6.
+            Sequentially assign pixels generated in Step 4 to the j-th pixel of the n shadow images.
+        */
+        modify_carriers(carriers, k, n, shadow_pixels, section_num);
+    }
+    save_shadows(s_paths, carriers, n);
     return ERR_OK;
 }
 
@@ -142,8 +154,8 @@ process_shadows(uint8_t* shadows, int n, uint8_t* section, int k) {
     char is_overflowing = 1;
     while (is_overflowing) {
         is_overflowing = 0;
-        for (int x = 0; x <= n; x++) {
-            int val = evaluate_polynomial(section, k, x);
+        for (int x = 1; x <= n; x++) {
+            int val = evaluate_polynomial(section, k - 1, x);
 
             /*
                 Step 5. 
@@ -162,5 +174,37 @@ process_shadows(uint8_t* shadows, int n, uint8_t* section, int k) {
                 shadows[x - 1] = (uint8_t)val;
             }
         }
+    }
+}
+
+void
+modify_carriers(BMPImage* carriers[MAX_CARRIERS], int k, int n, uint8_t shadow_pixels[n], int section_num) {
+    for (int i = 0; i < n; i++) {
+        uint8_t target_pixel = shadow_pixels[i];
+        if (k == 8) {
+            // LSB
+            uint32_t carrier_pixel_start = section_num * 8;
+            for (int bit = 0; bit < 8; bit++) {
+                uint32_t pixel_idx  = carrier_pixel_start + bit;
+                uint8_t current_bit = (target_pixel >> (7 - bit)) & 1;
+
+                carriers[i]->data[pixel_idx] = (carriers[i]->data[pixel_idx] & 0xFE) | current_bit;
+            }
+        } else {
+            carriers[i]->data[section_num] = target_pixel;
+        }
+    }
+}
+
+void
+save_shadows(char s_paths[MAX_CARRIERS][256], BMPImage* carriers[MAX_CARRIERS], int n) {
+    for (int i = 0; i < n; i++) {
+        char out_filename[32];
+        snprintf(out_filename, sizeof(out_filename), "s_%d.bmp", i + 1);
+
+        write_bmp(carriers[i], out_filename);
+        write_shadow_metadata(out_filename, seed, i);
+        // write_bmp(carriers[i], s_paths[i]);
+        // write_shadow_metadata(s_paths[i], seed, i);
     }
 }
