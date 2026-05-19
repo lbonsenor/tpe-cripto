@@ -6,6 +6,7 @@
 #include "algorithm.h"
 #include "permutation.h"
 
+// TODO: Change ints to their respective types (uint8/16/32/64)
 int
 load_carriers(BMPImage* carriers[MAX_CARRIERS], int n, char s_paths[MAX_CARRIERS][256]);
 
