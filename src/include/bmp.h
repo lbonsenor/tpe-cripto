@@ -56,6 +56,11 @@ read_bmp(const char* filename);
 int
 write_bmp(BMPImage* img, const char* filename);
 
+/// @brief Writes the shadow metadata based on the given seed and index
+/// @param path
+/// @param seed
+/// @param shadow_id
+/// @return 0 if success
 int
 write_shadow_metadata(const char* path, uint16_t seed, uint16_t shadow_id);
 
