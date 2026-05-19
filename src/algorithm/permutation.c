@@ -10,5 +10,3 @@ nextChar(void) {
     seed = (seed * 0x5DEECE66DL + 0xBL) & ((1LL << 48) - 1);
     return (uint8_t)(seed >> 40);
 }
-
-// :()
