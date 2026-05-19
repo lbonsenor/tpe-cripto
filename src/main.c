@@ -1,25 +1,17 @@
+#include <dirent.h>
+#include <stdint.h>
 #include <stdio.h>
-#include <stdlib.h>
+#include <string.h>
+#include <strings.h>
 
 #include "args.h"
 #include "bmp.h"
 
 void
-test_path(Args* args) {
-    BMPImage* img = read_bmp(args->secret_path);
-    if (!img)
-        return;
+test_path(Args* args);
 
-    printf("Successfully loaded BMP image!\n");
-    printf("Resolution: %d x %d\n", img->width, img->height);
-
-    // Access a pixel at Coordinate (X=0, Y=0)
-    // Remember: inside the data array, the values are accessed as img->data[y * width + x]
-    uint8_t top_left = img->data[0 * img->width + 0];
-    printf("Top-left pixel value: %d", top_left);
-
-    free_bmp(img);
-}
+char
+is_bmp(const char* file);
 
 int
 main(int argc, char* argv[]) {
@@ -46,4 +38,31 @@ main(int argc, char* argv[]) {
     test_path(&args);
 
     return ERR_OK;
+}
+
+void
+test_path(Args* args) {
+    BMPImage* img = read_bmp(args->secret_path);
+    if (!img)
+        return;
+
+    printf("Successfully loaded BMP image!\n");
+    printf("Resolution: %d x %d\n", img->width, img->height);
+
+    // Access a pixel at Coordinate (X=0, Y=0)
+    // Remember: inside the data array, the values are accessed as img->data[y * width + x]
+    uint8_t top_left = img->data[0 * img->width + 0];
+    printf("Top-left pixel value: %d\n", top_left);
+
+    char s_paths[MAX_CARRIERS][256];
+    printf("Shadow images count: %d", verify_directory(args, img, s_paths));
+
+    free_bmp(img);
+}
+
+char
+is_bmp(const char* file) {
+    size_t len = strlen(file);
+    return (len > 4 && strcasecmp(file + len - 4, ".bmp") == 0);
+    return 0;
 }

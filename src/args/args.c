@@ -1,7 +1,9 @@
+#include <dirent.h>
 #include <getopt.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <strings.h>
 
 #include "args.h"
 
@@ -20,11 +22,12 @@ static const char* error_messages[] = {
     [ERR_IMAGE_SIZE_MISMATCH] = "Las imágenes portadoras no tienen el mismo tamaño.",
     [ERR_INVALID_BMP]         = "El archivo BMP no cumple los requisitos: debe ser de 8 bits por píxel.",
     [ERR_MEMORY]              = "Error al reservar memoria dinámica.",
+    [ERR_CANNOT_OPEN_DIR]     = "Error: No se pudo abrir el directorio"
 };
 
 void
 print_error(int error_code) {
-    if (error_code > ERR_OK && error_code <= ERR_MEMORY) {
+    if (error_code > ERR_OK && error_code <= ERR_CANNOT_OPEN_DIR) {
         fprintf(stderr, "ERROR: %s\n", error_messages[error_code]);
     } else {
         fprintf(stderr, "ERROR: Error desconocido (código %d).\n", error_code);
@@ -129,6 +132,9 @@ parse_args(int argc, char* argv[], Args* out) {
 
             case 'D':
                 out->dir = optarg;
+                if (out->dir == NULL || strlen(out->dir) == 0) {
+                    out->dir = "."; // Por si el user usa -dir [VACIO]
+                }
                 break;
 
             default:
@@ -169,4 +175,66 @@ parse_args(int argc, char* argv[], Args* out) {
     }
 
     return ERR_OK;
+}
+
+int
+verify_directory(Args* args, BMPImage* s_img, char s_paths[MAX_CARRIERS][256]) {
+    DIR* dir = opendir(args->dir);
+
+    if (!dir) {
+        print_error(ERR_CANNOT_OPEN_DIR);
+        return -1;
+    }
+
+    struct dirent* entry;
+    int valid_count = 0;
+
+    while ((entry = readdir(dir)) != NULL) {
+        size_t len = strlen(entry->d_name);
+        if (len <= 4 || strcasecmp(entry->d_name + len - 4, ".bmp") != 0) {
+            continue;
+        }
+
+        char full_path[512];
+        snprintf(full_path, sizeof(full_path), "%s/%s", args->dir, entry->d_name);
+
+        if (args->secret_path && strcmp(full_path, args->secret_path) == 0) {
+            continue;
+        }
+
+        // Pruebo leer la imagen
+        BMPImage* carrier_test = read_bmp(full_path);
+        if (!carrier_test) {
+            continue;
+        }
+
+        if (args->k == 8 && (carrier_test->width != s_img->width || carrier_test->height != s_img->height)) {
+            free_bmp(carrier_test);
+            continue;
+        }
+
+        if (valid_count < MAX_CARRIERS) {
+            strncpy(s_paths[valid_count], full_path, 256);
+            valid_count++;
+        }
+
+        free_bmp(carrier_test);
+    }
+    closedir(dir);
+
+    if (args->n == 0) {
+        args->n = valid_count;
+    }
+
+    if (valid_count < args->n) {
+        print_error(ERR_NOT_ENOUGH_IMAGES);
+        return -1;
+    }
+
+    if (args->n < args->k) {
+        print_error(ERR_N_OUT_OF_RANGE);
+        return -1;
+    }
+
+    return valid_count;
 }

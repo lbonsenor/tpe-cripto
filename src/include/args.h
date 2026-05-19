@@ -1,16 +1,13 @@
 #ifndef ARGS_H
 #define ARGS_H
 
+#include <bmp.h>
+
 #define MIN_K 2
 #define MAX_K 10
 #define MIN_N 2
 
-#define BMP_HEADER_SIZE 54
-
-#define BMP_SEED_BYTE_LO 6   /* LSB de la semilla de permutación      */
-#define BMP_SEED_BYTE_HI 7   /* MSB de la semilla de permutación      */
-#define BMP_SHADOW_BYTE_LO 8 /* LSB del número de orden de la sombra  */
-#define BMP_SHADOW_BYTE_HI 9 /* MSB del número de orden de la sombra  */
+#define MAX_CARRIERS 1024
 
 #define ERR_OK 0
 #define ERR_INVALID_MODE 1         /* Se especificó -d y -r a la vez, o ninguno        */
@@ -26,6 +23,7 @@
 #define ERR_IMAGE_SIZE_MISMATCH 11 /* Las portadoras no tienen el mismo tamaño          */
 #define ERR_INVALID_BMP 12         /* El archivo BMP no cumple los requisitos pedidos   */
 #define ERR_MEMORY 13              /* Fallo de reserva de memoria dinámica              */
+#define ERR_CANNOT_OPEN_DIR 14     /* No se pudo abrir el directorio en los argumentos  */
 
 typedef enum {
     MODE_UNSET      = -1,
@@ -48,6 +46,16 @@ typedef struct {
 /// @return Devuelve ERR_OK en caso de éxito o un código de error en caso contrario. En caso de error imprime un mensaje descriptivo y la sintaxis correcta.
 int
 parse_args(int argc, char* argv[], Args* out);
+
+/// @brief Verifica si en el directorio provisto hay una cantidad correcta de sombras validas, en ese caso, retorna las ubicaciones validas
+/// @param args
+/// @param s_img La imagen secreta
+/// @param s_paths Puntero para escribir las ubicaciones de las sombras
+/// @return n la cantidad de sombras validas
+/// @return 0 si no pudo encontrar
+/// @return -1 si hubo un error
+int
+verify_directory(Args* args, BMPImage* s_img, char s_paths[MAX_CARRIERS][256]);
 
 /// @brief Imprime la sintaxis de uso del programa.
 /// @param program_name
