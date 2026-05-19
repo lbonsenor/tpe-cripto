@@ -1,6 +1,9 @@
+
+#include <stdint.h>
+#include <stdlib.h>
+
 #include "bmp.h"
 #include "permutation.h"
-#include <stdint.h>
 
 void
 generate_table(uint8_t* table, int32_t width, int32_t height);
@@ -100,15 +103,16 @@ assign_pixels(BMPImage* img, uint8_t* pixels, int k, int j) {
 int
 evaluate_polynomial(uint8_t* coef_arr, int degree, int x) {
     uint32_t result = 0;
-    for (int i = 0; i <= degree; i++) {
-        result += coef_arr[i] * pow(x, i);
+    // https://en.wikipedia.org/wiki/Horner%27s_method
+    for (int i = degree; i >= 0; i--) {
+        result = (result * x + coef_arr[i]) % 257;
     }
     return result % 257;
 }
 
 void
 process_shadows(uint8_t* shadows, int n, uint8_t* section, int k) {
-    char is_overflowing;
+    char is_overflowing = 1;
     while (is_overflowing) {
         is_overflowing = 0;
         for (int x = 0; x <= n; x++) {
