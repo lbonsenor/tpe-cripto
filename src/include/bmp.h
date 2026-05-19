@@ -49,6 +49,9 @@ typedef struct {
 BMPImage*
 read_bmp(const char* filename);
 
+int
+write_bmp(BMPImage* img, const char* filename);
+
 /// @brief Liberates the BMPImage from memory
 /// @param image
 void

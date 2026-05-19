@@ -58,6 +58,67 @@ read_bmp(const char* filename) {
     return image;
 }
 
+int
+write_bmp(BMPImage* image, const char* filename) {
+    if (!image || !image->data || image->width <= 0 || image->height <= 0) {
+        fprintf(stderr, "Error: Imagen inválida provista para guardar.\n");
+        return -1;
+    }
+
+    FILE* file = fopen(filename, "wb");
+    if (!file) {
+        fprintf(stderr, "Error: No se pudo crear el archivo '%s'\n", filename);
+        return -1;
+    }
+
+    int padding          = (4 - (image->width) % 4) % 4;
+    uint32_t matrix_size = (image->width + padding) * image->height;
+
+    uint32_t headers_and_palette_size = 54 + 1024;
+    BMPFileHeader file_header;
+    file_header.type      = BMP_TYPE_BM;
+    file_header.size      = headers_and_palette_size + matrix_size;
+    file_header.reserved1 = 0; // RESERVADO PARA LA SEED E INDICE
+    file_header.reserved2 = 0;
+    file_header.offset    = headers_and_palette_size;
+
+    BMPInfoHeader info_header;
+    info_header.size             = 40;
+    info_header.width            = image->width;
+    info_header.height           = image->height;
+    info_header.planes           = 1;
+    info_header.bits_per_pixel   = 8;
+    info_header.compression      = 0;
+    info_header.image_size       = matrix_size;
+    info_header.x_pixels_per_m   = 2835;
+    info_header.y_pixels_per_m   = 2835;
+    info_header.colors_used      = 256;
+    info_header.colors_important = 0;
+
+    fwrite(&file_header, sizeof(BMPFileHeader), 1, file);
+    fwrite(&info_header, sizeof(BMPInfoHeader), 1, file);
+
+    for (int i = 0; i < 256; i++) {
+        uint8_t palette_entry[4] = { i, i, i, 0 };
+        fwrite(palette_entry, sizeof(uint8_t), 4, file);
+    }
+
+    uint8_t padding_bytes[3] = { 0, 0, 0 };
+    for (int i = 0; i < image->height; i++) {
+        int source_row   = image->height - 1 - i;
+        uint8_t* row_ptr = &image->data[source_row * image->width];
+
+        fwrite(row_ptr, sizeof(uint8_t), image->width, file);
+
+        if (padding > 0) {
+            fwrite(padding_bytes, sizeof(uint8_t), padding, file);
+        }
+    }
+
+    fclose(file);
+    return 0;
+}
+
 void
 free_bmp(BMPImage* image) {
     if (image) {
