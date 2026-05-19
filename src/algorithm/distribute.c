@@ -2,42 +2,20 @@
 #include "permutation.h"
 #include <stdint.h>
 
-// Random Table R
 void
-generate_table(uint8_t* table, int32_t width, int32_t height) {
-    for (int i = 0; i < width * height; i++) {
-        table[i] = nextChar();
-    }
-}
-
-// Apply XOR operation to the image data with the random table
-void
-apply_xor(BMPImage* img, uint8_t* table, BMPImage* out) {
-    out->width  = img->width;
-    out->height = img->height;
-
-    out->data = (uint8_t*)malloc(sizeof(uint8_t) * img->width * img->height);
-
-    for (int i = 0; i < img->width * img->height; i++) {
-        out->data[i] = img->data[i] ^ table[i];
-    }
-}
+generate_table(uint8_t* table, int32_t width, int32_t height);
 
 void
-assign_pixels(BMPImage* img, uint8_t** section, int k, int j) {
-    for (int i = 0; i < k; i++) {
-        section[i] = img->data[k * j + i];
-    }
-}
+apply_xor(BMPImage* img, uint8_t* table, BMPImage* out);
+
+void
+assign_pixels(BMPImage* img, uint8_t* section, int k, int j);
 
 int
-evaluate_polynomial(uint8_t* coef_arr, int degree, int x) {
-    uint32_t result = 0;
-    for (int i = 0; i <= degree; i++) {
-        result += coef_arr[i] * pow(x, i);
-    }
-    return result % 257;
-}
+evaluate_polynomial(uint8_t* coef_arr, int degree, int x);
+
+void
+process_shadows(uint8_t* shadows, int n, uint8_t* section, int k);
 
 void
 distribute(BMPImage* img, int k, int n) {
@@ -69,22 +47,89 @@ distribute(BMPImage* img, int k, int n) {
     */
     uint32_t img_size = r_img->width * r_img->height;
 
+    /*
+        Step 7. Increase j by 1. 
+        Step 8. Repeat Steps 3 to 7 until all pixels of Q are processed. 
+    */
     for (; section_num < img_size / k; section_num++) {
-        uint8_t* processed_section[k];
-        // Get a0, a1, a2,…, ar-1 from the image
-        uint8_t coef_arr[k];
-        for (int i = 0; i < k; i++) {
-            coef_arr[i] = r_img->data[section_num * k + i];
-        }
-        // Calculate f(1), f(2), ..., f(n)
-        uint8_t to_apply_shadows[n];
-        for (int i = 0; i < n; i++) {
-            to_apply_shadows[i] = evaluate_polynomial(coef_arr, k - 1, i + 1);
-        }
+        uint8_t processed_section[k];
+        assign_pixels(r_img, processed_section, k, section_num);
 
-        // Apply the permutation to the shadows
-        for (int i = 0; i < n; i++) {
-            permute_shadows(to_apply_shadows[i]);
+        /*
+            Step 4. 
+            Generate the n shadow pixels as Eq. 4. 
+            fj(1), fj(2), fj(3),..., fj(n)
+
+            Step 5. 
+            If fj(x) = 256, let the first non-zero pixel of {a0, a1, a2 ,..., an-1} be decreased by 1,
+            say a0 = a0 –1, and goto Step 4.
+        */
+        uint8_t shadow_pixels[n];
+        process_shadows(shadow_pixels, n, processed_section, k);
+    }
+}
+
+// Random Table R
+void
+generate_table(uint8_t* table, int32_t width, int32_t height) {
+    for (int i = 0; i < width * height; i++) {
+        table[i] = nextChar();
+    }
+}
+
+// Apply XOR operation to the image data with the random table
+void
+apply_xor(BMPImage* img, uint8_t* table, BMPImage* out) {
+    out->width  = img->width;
+    out->height = img->height;
+
+    out->data = (uint8_t*)malloc(sizeof(uint8_t) * img->width * img->height);
+
+    for (int i = 0; i < img->width * img->height; i++) {
+        out->data[i] = img->data[i] ^ table[i];
+    }
+}
+
+void
+assign_pixels(BMPImage* img, uint8_t* pixels, int k, int j) {
+    for (int i = 0; i < k; i++) {
+        pixels[i] = img->data[k * j + i];
+    }
+}
+
+int
+evaluate_polynomial(uint8_t* coef_arr, int degree, int x) {
+    uint32_t result = 0;
+    for (int i = 0; i <= degree; i++) {
+        result += coef_arr[i] * pow(x, i);
+    }
+    return result % 257;
+}
+
+void
+process_shadows(uint8_t* shadows, int n, uint8_t* section, int k) {
+    char is_overflowing;
+    while (is_overflowing) {
+        is_overflowing = 0;
+        for (int x = 0; x <= n; x++) {
+            int val = evaluate_polynomial(section, k, x);
+
+            /*
+                Step 5. 
+                If fj(x) = 256, let the first non-zero pixel of {a0, a1, a2 ,..., an-1} be decreased by 1,
+                say a0 = a0 –1, and goto Step 4.
+            */
+            if (val == 256) {
+                for (int i = 0; i < k; i++) {
+                    if (section[i] > 0) {
+                        section[i] -= 1;
+                        break;
+                    }
+                }
+                break;
+            } else {
+                shadows[x - 1] = (uint8_t)val;
+            }
         }
     }
 }
