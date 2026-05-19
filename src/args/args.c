@@ -180,7 +180,6 @@ parse_args(int argc, char* argv[], Args* out) {
 int
 verify_directory(Args* args, BMPImage* s_img, char s_paths[MAX_CARRIERS][256]) {
     DIR* dir = opendir(args->dir);
-
     if (!dir) {
         print_error(ERR_CANNOT_OPEN_DIR);
         return -1;
@@ -202,13 +201,13 @@ verify_directory(Args* args, BMPImage* s_img, char s_paths[MAX_CARRIERS][256]) {
             continue;
         }
 
-        // Pruebo leer la imagen
         BMPImage* carrier_test = read_bmp(full_path);
         if (!carrier_test) {
             continue;
         }
 
-        if (args->k == 8 && (carrier_test->width != s_img->width || carrier_test->height != s_img->height)) {
+        // Para cualquier k, la portadora debe tener el mismo tamaño que la imagen secreta
+        if (carrier_test->width != s_img->width || carrier_test->height != s_img->height) {
             free_bmp(carrier_test);
             continue;
         }
@@ -220,6 +219,7 @@ verify_directory(Args* args, BMPImage* s_img, char s_paths[MAX_CARRIERS][256]) {
 
         free_bmp(carrier_test);
     }
+
     closedir(dir);
 
     if (args->n == 0) {

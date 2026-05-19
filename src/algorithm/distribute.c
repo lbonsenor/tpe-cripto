@@ -24,6 +24,9 @@ evaluate_polynomial(uint8_t* coef_arr, int degree, int x);
 void
 process_shadows(uint8_t* shadows, int n, uint8_t* section, int k);
 
+int
+bits_for_k(int k);
+
 void
 modify_carriers(BMPImage* carriers[MAX_CARRIERS], int k, int n, uint8_t shadow_pixels[n], int section_num);
 
@@ -177,21 +180,43 @@ process_shadows(uint8_t* shadows, int n, uint8_t* section, int k) {
     }
 }
 
+int
+bits_for_k(int k) {
+    int bits = 8 / k;
+    if (8 % k != 0)
+        bits++;
+    if (bits <= 1)
+        return 1;
+    if (bits <= 2)
+        return 2;
+    return 4;
+}
+
+/*
+    LOGIC:
+    k=8,9,10    -> 1 LSB of 8 pixels is modified
+    k=4,5,6,7   -> 2 LSB of 4 pixels are modified
+    k=2,3       -> 4 LSB of 2 pixels are modified
+*/
+
 void
 modify_carriers(BMPImage* carriers[MAX_CARRIERS], int k, int n, uint8_t shadow_pixels[n], int section_num) {
-    for (int i = 0; i < n; i++) {
-        uint8_t target_pixel = shadow_pixels[i];
-        if (k == 8) {
-            // LSB
-            uint32_t carrier_pixel_start = section_num * 8;
-            for (int bit = 0; bit < 8; bit++) {
-                uint32_t pixel_idx  = carrier_pixel_start + bit;
-                uint8_t current_bit = (target_pixel >> (7 - bit)) & 1;
+    int bits_per_pixel  = bits_for_k(k);
+    int pixels_per_byte = 8 / bits_per_pixel;
+    uint8_t mask        = (1 << bits_per_pixel) - 1;
 
-                carriers[i]->data[pixel_idx] = (carriers[i]->data[pixel_idx] & 0xFE) | current_bit;
-            }
-        } else {
-            carriers[i]->data[section_num] = target_pixel;
+    for (int i = 0; i < n; i++) {
+        uint8_t target       = shadow_pixels[i];
+        uint32_t pixel_start = section_num * pixels_per_byte;
+
+        for (int bit_group = 0; bit_group < pixels_per_byte; bit_group++) {
+            uint32_t pixel_idx = pixel_start + bit_group;
+
+            int shift    = 8 - bits_per_pixel * (bit_group + 1);
+            uint8_t bits = (target >> shift) & mask;
+
+            carriers[i]->data[pixel_idx] =
+              (carriers[i]->data[pixel_idx] & ~mask) | bits;
         }
     }
 }
