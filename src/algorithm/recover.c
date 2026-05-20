@@ -1,4 +1,5 @@
 #include "algorithm.h"
+#include "bmp.h"
 
 /*
 TODO Step 0. Recover seed/indexes
@@ -11,5 +12,23 @@ TODO Step 6. Apply the XOR operation to the predefined random image R and Q to g
 */
 
 int
-recover() {
+find_shadows_and_seed(char s_paths[MAX_CARRIERS][256], int n, BMPImage s_imgs[n], int64_t* seed);
+
+int
+recover(char* out_path, int k, int n, char s_paths[MAX_CARRIERS][256]) {
+    /*
+        Step 0. 
+        Recover seed/indexes
+    */
+
+    BMPImage s_imgs[n];
+    int64_t seed;
+    find_shadows_and_seed(s_paths, n, s_imgs, &seed);
+
+    return 0;
+}
+
+int
+find_shadows_and_seed(char s_paths[MAX_CARRIERS][256], int n, BMPImage s_imgs[n], int64_t* seed) {
+    return 0;
 }

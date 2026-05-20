@@ -11,9 +11,6 @@ int
 load_carriers(BMPImage* carriers[MAX_CARRIERS], int n, char s_paths[MAX_CARRIERS][256]);
 
 void
-generate_table(uint8_t* table, int32_t width, int32_t height);
-
-void
 apply_xor(BMPImage* img, uint8_t* table, BMPImage* out);
 
 void
@@ -113,14 +110,6 @@ load_carriers(BMPImage* carriers[MAX_CARRIERS], int n, char s_paths[MAX_CARRIERS
         }
     }
     return 0;
-}
-
-// Random Table R
-void
-generate_table(uint8_t* table, int32_t width, int32_t height) {
-    for (int i = 0; i < width * height; i++) {
-        table[i] = nextChar();
-    }
 }
 
 // Apply XOR operation to the image data with the random table

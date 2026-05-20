@@ -5,7 +5,7 @@
 #define MAX 50
 #define SET 10
 
-static int64_t seed;
+static int64_t seed = 0;
 
 /// @brief Initializes the seed based on a given number
 /// @param s
@@ -17,6 +17,11 @@ setSeed(int64_t s);
 uint8_t
 nextChar(void);
 
-static int64_t seed = 0;
+/// @brief Generates a width x height table with pseudorandom characters
+/// @param table
+/// @param width
+/// @param height
+void
+generate_table(uint8_t* table, int32_t width, int32_t height);
 
 #endif
