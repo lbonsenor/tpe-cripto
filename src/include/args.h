@@ -58,6 +58,15 @@ parse_args(int argc, char* argv[], Args* out);
 int
 verify_directory(Args* args, BMPImage* s_img, char s_paths[MAX_CARRIERS][256]);
 
+/// @brief Verifies recover shadows have the same size and are enough to recover.
+/// @param args
+/// @param k Recovery threshold.
+/// @param s_paths Paths pointer for valid shadows.
+/// @retval - n: The amount of valid shadows found.
+/// @retval - -1: If an error has occurred.
+int
+verify_recovery_directory(Args* args, int k, char s_paths[MAX_CARRIERS][256]);
+
 /// @brief Prints the program's usage syntax.
 /// @param program_name
 void

@@ -64,6 +64,14 @@ write_bmp(BMPImage* img, const char* filename);
 int
 write_shadow_metadata(const char* path, uint16_t seed, uint16_t shadow_id);
 
+/// @brief Reads shadow metadata (seed and index) from BMP header reserved bytes.
+/// @param path
+/// @param seed_out Receives bytes 6-7 (reserved1)
+/// @param shadow_id_out Receives bytes 8-9 (reserved2)
+/// @return 0 if success
+int
+read_shadow_metadata(const char* path, uint16_t* seed_out, uint16_t* shadow_id_out);
+
 /// @brief Liberates the BMPImage from memory
 /// @param image
 void

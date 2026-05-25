@@ -14,7 +14,7 @@ static const char* error_messages[] = {
     [ERR_MISSING_K]           = "Falta el parámetro obligatorio: -k <número>.",
     [ERR_K_OUT_OF_RANGE]      = "El valor de k debe ser >= 2 y <= 10.",
     [ERR_N_OUT_OF_RANGE]      = "El valor de n debe ser >= 2 y >= k.",
-    [ERR_N_WITH_RECOVER]      = "El parámetro -n solo puede usarse con el modo -d (distribuir).",
+    [ERR_N_WITH_RECOVER]      = "Error de validación del parámetro -n.",
     [ERR_INVALID_ARGUMENT]    = "Argumento inválido o mal formado.",
     [ERR_FILE_NOT_FOUND]      = "No se pudo abrir el archivo indicado.",
     [ERR_DIR_NOT_FOUND]       = "No se pudo abrir el directorio indicado.",
@@ -39,7 +39,7 @@ print_usage(const char* program_name) {
     fprintf(stderr,
       "Uso:\n"
       "  Distribuir: %s -d -secret <imagen.bmp> -k <num> [-n <num>] [-dir <directorio>]\n"
-      "  Recuperar:  %s -r -secret <imagen.bmp> -k <num> [-dir <directorio>]\n"
+      "  Recuperar:  %s -r -secret <imagen.bmp> -k <num> [-n <num>] [-dir <directorio>]\n"
       "\n"
       "Parámetros obligatorios:\n"
       "  -d              Distribuir la imagen secreta en imágenes portadoras.\n"
@@ -48,12 +48,12 @@ print_usage(const char* program_name) {
       "  -k <num>        Mínimo de sombras para recuperar el secreto (%d <= k <= %d).\n"
       "\n"
       "Parámetros opcionales:\n"
-      "  -n <num>        Total de sombras a generar (solo con -d, n >= k, n >= %d).\n"
+      "  -n <num>        Total de sombras (en -d: generar, en -r: usar; n >= k, n >= %d).\n"
       "  -dir <dir>      Directorio de imágenes portadoras (default: directorio actual).\n"
       "\n"
       "Ejemplos:\n"
       "  %s -d -secret clave.bmp -k 2 -n 4 -dir varias\n"
-      "  %s -r -secret secreta.bmp -k 3\n",
+      "  %s -r -secret secreta.bmp -k 3 -n 5\n",
       program_name,
       program_name,
       MIN_K,
@@ -162,12 +162,6 @@ parse_args(int argc, char* argv[], Args* out) {
         return ERR_MISSING_K;
     }
 
-    if (n_set && out->mode == MODE_RECOVER) {
-        print_error(ERR_N_WITH_RECOVER);
-        print_usage(argv[0]);
-        return ERR_N_WITH_RECOVER;
-    }
-
     if (n_set && out->n < out->k) {
         print_error(ERR_N_OUT_OF_RANGE);
         print_usage(argv[0]);
@@ -175,6 +169,62 @@ parse_args(int argc, char* argv[], Args* out) {
     }
 
     return ERR_OK;
+}
+
+// verify if the shadows given have the same size, and if they are enough to recover the secret image, if so, it puts the valid paths in `s_paths`
+int verify_recovery_directory(Args* args, int k,  char s_paths[MAX_CARRIERS][256]) {
+    DIR* dir = opendir(args->dir);
+    if (!dir) {
+        print_error(ERR_CANNOT_OPEN_DIR);
+        return -1;
+    }
+
+    struct dirent* entry;
+    int valid_count = 0;
+    int32_t ref_width = -1, ref_height = -1;
+
+    while ((entry = readdir(dir)) != NULL) {
+        size_t len = strlen(entry->d_name);
+        if (len <= 4 || strcasecmp(entry->d_name + len - 4, ".bmp") != 0) {
+            continue;
+        }
+
+        char full_path[512];
+        snprintf(full_path, sizeof(full_path), "%s/%s", args->dir, entry->d_name);
+
+        BMPImage* carrier_test = read_bmp(full_path);
+        if (!carrier_test) {
+            continue;
+        }
+
+        if (ref_width == -1 && ref_height == -1) {
+            ref_width  = carrier_test->width;
+            ref_height = carrier_test->height;
+        }
+
+        if (carrier_test->width != ref_width || carrier_test->height != ref_height) {
+            free_bmp(carrier_test);
+            print_error(ERR_IMAGE_SIZE_MISMATCH);
+            return -1;
+        }
+
+        if (valid_count < MAX_CARRIERS) {
+            strncpy(s_paths[valid_count], full_path, 256);
+            s_paths[valid_count][255] = '\0';
+            valid_count++;
+        }
+
+        free_bmp(carrier_test);
+    }
+
+    closedir(dir);
+
+    if (valid_count < k) {
+        print_error(ERR_NOT_ENOUGH_IMAGES);
+        return -1;
+    }
+
+    return valid_count;
 }
 
 int

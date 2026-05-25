@@ -27,7 +27,7 @@ main(int argc, char* argv[]) {
     printf("Modo    : %s\n", args.mode == MODE_DISTRIBUTE ? "DISTRIBUIR" : "RECUPERAR");
     printf("Secreto : %s\n", args.secret_path);
     printf("k       : %d\n", args.k);
-    if (args.mode == MODE_DISTRIBUTE) {
+    if (args.mode == MODE_DISTRIBUTE || args.mode == MODE_RECOVER) {
         if (args.n == 0)
             printf("n       : (usar todas las del directorio)\n");
         else
@@ -43,6 +43,15 @@ main(int argc, char* argv[]) {
             verify_directory(&args, img, s_paths);
 
             distribute(img, args.k, args.n, s_paths);
+            break;
+        }
+        case MODE_RECOVER:{
+            printf("Recovering secret image...\n");
+            char s_paths[MAX_CARRIERS][256];
+            if (verify_recovery_directory(&args, args.k, s_paths) < 0) {
+                return ERR_INVALID_BMP;
+            }
+            recover(args.secret_path, args.k, args.n, s_paths);
             break;
         }
 

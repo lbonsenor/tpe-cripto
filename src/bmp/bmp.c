@@ -3,6 +3,15 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+static int
+read_u16_at(FILE* file, long offset, uint16_t* out) {
+    if (fseek(file, offset, SEEK_SET) != 0)
+        return -1;
+    if (fread(out, sizeof(uint16_t), 1, file) != 1)
+        return -1;
+    return 0;
+}
+
 BMPImage*
 read_bmp(const char* filename) {
     FILE* file = fopen(filename, "rb");
@@ -137,6 +146,26 @@ write_shadow_metadata(const char* path, uint16_t seed, uint16_t shadow_id) {
 
     fclose(file);
 
+    return 0;
+}
+
+int
+read_shadow_metadata(const char* path, uint16_t* seed_out, uint16_t* shadow_id_out) {
+    if (!path || !seed_out || !shadow_id_out)
+        return -1;
+
+    FILE* file = fopen(path, "rb");
+    if (!file)
+        return -1;
+
+    // Seed is stored in bytes 6-7 (reserved1)
+    // Shadow index is stored in bytes 8-9 (reserved2)
+    if (read_u16_at(file, 6, seed_out) != 0 || read_u16_at(file, 8, shadow_id_out) != 0) {
+        fclose(file);
+        return -1;
+    }
+
+    fclose(file);
     return 0;
 }
 
