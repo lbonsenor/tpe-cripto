@@ -1,10 +1,11 @@
 #include "algorithm.h"
 #include "bmp.h"
+#include "lagrange.h"
 #include <stddef.h>
 #include <stdlib.h>
 #include <stdint.h>
 #include <stdio.h>
-#include <stdlib.h>
+#include "permutation.h"
 
 /*
 TODO Step 0. Recover seed/indexes
@@ -30,7 +31,7 @@ TODO Step 6. Apply the XOR operation to the predefined random image R and Q to g
 
 
 int
-find_shadows_and_seed(char s_paths[MAX_CARRIERS][256], int n, BMPImage* s_imgs[n], int64_t* seed);
+find_shadows_and_seed(char s_paths[MAX_CARRIERS][256], int n, BMPImage* s_imgs[n], uint16_t* seed);
 
 static int
 bits_for_k(int k);
@@ -38,14 +39,11 @@ bits_for_k(int k);
 static uint8_t
 extract_shadow_byte(const BMPImage* shadow, int k, int section_num);
 
-static int
-lagrange_interpolation(uint8_t shadow_values[], int k,uint8_t out_coeffs[]);
-
 int
 recover(char* out_path, int k, int n, char s_paths[MAX_CARRIERS][256]) {
 
     BMPImage* s_imgs[n];
-    int64_t seed=-1;
+    uint16_t seed = 0;
     
     for (int i = 0; i < n; i++) {
         s_imgs[i] = NULL;
@@ -55,17 +53,22 @@ recover(char* out_path, int k, int n, char s_paths[MAX_CARRIERS][256]) {
         Step 0. 
         Recover seed/indexes
     */
-    find_shadows_and_seed(s_paths, n, s_imgs, &seed);
+    if (find_shadows_and_seed(s_paths, n, s_imgs, &seed) < 0) {
+        for (int i = 0; i < n; i++) {
+            free_bmp(s_imgs[i]);
+        }
+        return -1;
+    }
     /*
         Step 1. 
         Set the current processing section j to 1.
     */
     int32_t section_num = 0;
     int32_t img_size = s_imgs[0]->width * s_imgs[0]->height;
-    BMPImage * to_return = (BMPImage*)malloc(sizeof(BMPImage));
-    to_return->width = s_imgs[0]->width;
-    to_return->height = s_imgs[0]->height;
-    to_return->data = (uint8_t*)malloc(sizeof(uint8_t) * img_size);
+    BMPImage * image_to_apply_xor = (BMPImage*)malloc(sizeof(BMPImage));
+    image_to_apply_xor->width = s_imgs[0]->width;
+    image_to_apply_xor->height = s_imgs[0]->height;
+    image_to_apply_xor->data = (uint8_t*)malloc(sizeof(uint8_t) * img_size);
 
     for (; section_num < img_size / k; section_num++) {
 
@@ -84,7 +87,7 @@ recover(char* out_path, int k, int n, char s_paths[MAX_CARRIERS][256]) {
         uint8_t out_coeffs[k];
         lagrange_interpolation(shadow_values,k,out_coeffs);
         for(int i = 0; i < k; i++){
-            to_return->data[section_num * k + i] = out_coeffs[i];
+            image_to_apply_xor->data[section_num * k + i] = out_coeffs[i];
         }
     }
 
@@ -93,12 +96,22 @@ recover(char* out_path, int k, int n, char s_paths[MAX_CARRIERS][256]) {
         Step 6. 
         Apply the XOR operation to the predefined random image R and Q to get the secret image O’.
     */
+    setSeed(seed);
+    uint8_t r_table[image_to_apply_xor->width * image_to_apply_xor->height];
+    generate_table(r_table, image_to_apply_xor->width, image_to_apply_xor->height);
+    BMPImage * recovered_img = (BMPImage*)malloc(sizeof(BMPImage));
+    apply_xor(image_to_apply_xor, r_table, recovered_img);
 
     //TODO
     // Save the recovered image at out_path
+    char out_file[512];
+    snprintf(out_file, sizeof(out_file), "%s", out_path);
+    write_bmp(recovered_img, out_file);
 
     // free all allocated memory
-
+    free_bmp(recovered_img);
+    free(image_to_apply_xor->data);
+    free(image_to_apply_xor);
     for (int i = 0; i < n; i++) {
         free_bmp(s_imgs[i]);
     }
@@ -107,7 +120,8 @@ recover(char* out_path, int k, int n, char s_paths[MAX_CARRIERS][256]) {
 }
 
 int
-find_shadows_and_seed(char s_paths[MAX_CARRIERS][256], int n, BMPImage* s_imgs[n], int64_t* seed) {
+find_shadows_and_seed(char s_paths[MAX_CARRIERS][256], int n, BMPImage* s_imgs[n], uint16_t* seed) {
+    char seed_initialized = 0;
 
     for (int i = 0; i < n; i++) {
         BMPImage* shadow = read_bmp(s_paths[i]);
@@ -122,9 +136,10 @@ find_shadows_and_seed(char s_paths[MAX_CARRIERS][256], int n, BMPImage* s_imgs[n
             return -1;
         }
         
-        if(*seed == -1) {
+        if (!seed_initialized) {
             *seed = seed_to_compare;
-        } 
+            seed_initialized = 1;
+        }
         
         if (*seed != seed_to_compare || index >= (uint16_t)n || s_imgs[index] != NULL) {
             free_bmp(shadow);
@@ -163,11 +178,4 @@ extract_shadow_byte(const BMPImage* shadow, int k, int section_num) {
     }
 
     return value;
-}
-
-static int
-lagrange_interpolation(uint8_t shadow_values[], int k, uint8_t out_coeffs[]) {
-    
-    
-    return 0; 
 }
