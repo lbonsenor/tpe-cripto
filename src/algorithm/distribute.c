@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
+#include <string.h>
 
 #include "algorithm.h"
 #include "permutation.h"
@@ -27,10 +28,13 @@ void
 modify_carriers(BMPImage* carriers[MAX_CARRIERS], int k, int n, uint8_t shadow_pixels[n], int section_num);
 
 void
-save_shadows(char s_paths[MAX_CARRIERS][256], BMPImage* carriers[MAX_CARRIERS], int n, uint16_t dist_seed);
+save_shadows(char s_paths[MAX_CARRIERS][256], BMPImage* carriers[MAX_CARRIERS], int n, uint16_t dist_seed, const char* output_dir);
+
+static void
+build_output_path(char* out, size_t out_size, const char* output_dir, int index);
 
 int
-distribute(BMPImage* img, int k, int n, char s_paths[MAX_CARRIERS][256]) {
+distribute(BMPImage* img, int k, int n, char s_paths[MAX_CARRIERS][256], const char* output_dir) {
     BMPImage* carriers[MAX_CARRIERS];
     if (load_carriers(carriers, n, s_paths) == -1) {
         return -1;
@@ -92,8 +96,19 @@ distribute(BMPImage* img, int k, int n, char s_paths[MAX_CARRIERS][256]) {
         */
         modify_carriers(carriers, k, n, shadow_pixels, section_num);
     }
-    save_shadows(s_paths, carriers, n, dist_seed);
+    save_shadows(s_paths, carriers, n, dist_seed, output_dir);
     return ERR_OK;
+}
+
+static void
+build_output_path(char* out, size_t out_size, const char* output_dir, int index) {
+    const char* dir = (output_dir && output_dir[0] != '\0') ? output_dir : ".";
+    size_t len = strlen(dir);
+    if (len > 0 && dir[len - 1] == '/') {
+        snprintf(out, out_size, "%ss_%d.bmp", dir, index + 1);
+    } else {
+        snprintf(out, out_size, "%s/s_%d.bmp", dir, index + 1);
+    }
 }
 
 int
@@ -198,10 +213,10 @@ modify_carriers(BMPImage* carriers[MAX_CARRIERS], int k, int n, uint8_t shadow_p
 }
 
 void
-save_shadows(char s_paths[MAX_CARRIERS][256], BMPImage* carriers[MAX_CARRIERS], int n, uint16_t dist_seed) {
+save_shadows(char s_paths[MAX_CARRIERS][256], BMPImage* carriers[MAX_CARRIERS], int n, uint16_t dist_seed, const char* output_dir) {
     for (int i = 0; i < n; i++) {
-        char out_filename[32];
-        snprintf(out_filename, sizeof(out_filename), "s_%d.bmp", i + 1);
+        char out_filename[512];
+        build_output_path(out_filename, sizeof(out_filename), output_dir, i);
 
         write_bmp(carriers[i], out_filename);
         write_shadow_metadata(out_filename, dist_seed, i);

@@ -1,5 +1,6 @@
 #include <dirent.h>
 #include <stdint.h>
+#include <sys/stat.h>
 #include <stdio.h>
 #include <string.h>
 #include <strings.h>
@@ -13,6 +14,9 @@ test_path(Args* args);
 
 char
 is_bmp(const char* file);
+
+static int
+ensure_output_dir(const char* dir);
 
 int
 main(int argc, char* argv[]) {
@@ -34,6 +38,9 @@ main(int argc, char* argv[]) {
             printf("n       : %d\n", args.n);
     }
     printf("Dir     : %s\n", args.dir);
+    if (args.mode == MODE_DISTRIBUTE) {
+        printf("Output  : %s\n", args.output);
+    }
 
     switch (args.mode) {
         case MODE_DISTRIBUTE: {
@@ -42,7 +49,13 @@ main(int argc, char* argv[]) {
             char s_paths[MAX_CARRIERS][256];
             verify_directory(&args, img, s_paths);
 
-            distribute(img, args.k, args.n, s_paths);
+            if (ensure_output_dir(args.output) != 0) {
+                print_error(ERR_CANNOT_OPEN_DIR);
+                free_bmp(img);
+                return ERR_CANNOT_OPEN_DIR;
+            }
+
+            distribute(img, args.k, args.n, s_paths, args.output);
             break;
         }
         case MODE_RECOVER:{
@@ -63,6 +76,25 @@ main(int argc, char* argv[]) {
     // test_path(&args);
 
     return ERR_OK;
+}
+
+static int
+ensure_output_dir(const char* dir) {
+    struct stat st;
+
+    if (dir == NULL || dir[0] == '\0') {
+        return -1;
+    }
+
+    if (stat(dir, &st) == 0) {
+        return S_ISDIR(st.st_mode) ? 0 : -1;
+    }
+
+    if (mkdir(dir, 0755) == 0) {
+        return 0;
+    }
+
+    return -1;
 }
 
 void

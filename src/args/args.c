@@ -37,9 +37,9 @@ print_error(int error_code) {
 void
 print_usage(const char* program_name) {
     fprintf(stderr,
-      "Uso:\n"
-      "  Distribuir: %s -d -secret <imagen.bmp> -k <num> [-n <num>] [-dir <directorio>]\n"
-      "  Recuperar:  %s -r -secret <imagen.bmp> -k <num> [-n <num>] [-dir <directorio>]\n"
+            "Uso:\n"
+            "  Distribuir: %s -d -secret <imagen.bmp> -k <num> [-n <num>] [-dir <directorio>] [-o <directorio>]\n"
+            "  Recuperar:  %s -r -secret <imagen.bmp> -k <num> [-n <num>] [-dir <directorio>]\n"
       "\n"
       "Parámetros obligatorios:\n"
       "  -d              Distribuir la imagen secreta en imágenes portadoras.\n"
@@ -47,9 +47,10 @@ print_usage(const char* program_name) {
       "  -secret <img>   Nombre del archivo BMP secreto (entrada en -d, salida en -r).\n"
       "  -k <num>        Mínimo de sombras para recuperar el secreto (%d <= k <= %d).\n"
       "\n"
-      "Parámetros opcionales:\n"
-      "  -n <num>        Total de sombras (en -d: generar, en -r: usar; n >= k, n >= %d).\n"
-      "  -dir <dir>      Directorio de imágenes portadoras (default: directorio actual).\n"
+            "Parámetros opcionales:\n"
+            "  -n <num>        Total de sombras (en -d: generar, en -r: usar; n >= k, n >= %d).\n"
+            "  -dir <dir>      Directorio de imágenes portadoras (default: directorio actual).\n"
+            "  -o <dir>        Directorio de salida para sombras (solo -d, default: directorio actual).\n"
       "\n"
       "Ejemplos:\n"
       "  %s -d -secret clave.bmp -k 2 -n 4 -dir varias\n"
@@ -71,19 +72,21 @@ parse_args(int argc, char* argv[], Args* out) {
     out->k           = 0;
     out->n           = 0; /* 0 significa "usar todas las del directorio" */
     out->dir         = ".";
+    out->output      = ".";
 
     int n_set = 0;
 
     static struct option long_options[] = {
         { "secret", required_argument, 0, 'S' },
         { "dir", required_argument, 0, 'D' },
+        { "output", required_argument, 0, 'o' },
         { 0, 0, 0, 0 }
     };
 
     int opt;
     int opt_idx = 0;
 
-    while ((opt = getopt_long_only(argc, argv, "drS:k:n:D:", long_options, &opt_idx)) != -1) {
+    while ((opt = getopt_long_only(argc, argv, "drS:k:n:D:o:", long_options, &opt_idx)) != -1) {
         switch (opt) {
             case 'd':
                 if (out->mode == MODE_RECOVER) {
@@ -134,6 +137,12 @@ parse_args(int argc, char* argv[], Args* out) {
                 out->dir = optarg;
                 if (out->dir == NULL || strlen(out->dir) == 0) {
                     out->dir = "."; // Por si el user usa -dir [VACIO]
+                }
+                break;
+            case 'o':
+                out->output = optarg;
+                if (out->output == NULL || strlen(out->output) == 0) {
+                    out->output = ".";
                 }
                 break;
 

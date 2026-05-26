@@ -37,6 +37,7 @@ typedef struct {
     int k;             /* Mínimo de sombras para recuperar           */
     int n;             /* Total de sombras a generar (solo con -d)   */
     char* dir;         /* Directorio de portadoras (default: ".")    */
+    char* output;      /* Directorio para las imagenes sombra al distribuir */
 } Args;
 
 /// @brief Parses argc/argv into a Args struct
