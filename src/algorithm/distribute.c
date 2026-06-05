@@ -2,8 +2,8 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <time.h>
 #include <string.h>
+#include <time.h>
 
 #include "algorithm.h"
 #include "permutation.h"
@@ -103,7 +103,7 @@ distribute(BMPImage* img, int k, int n, char s_paths[MAX_CARRIERS][256], const c
 static void
 build_output_path(char* out, size_t out_size, const char* output_dir, int index) {
     const char* dir = (output_dir && output_dir[0] != '\0') ? output_dir : ".";
-    size_t len = strlen(dir);
+    size_t len      = strlen(dir);
     if (len > 0 && dir[len - 1] == '/') {
         snprintf(out, out_size, "%ss_%d.bmp", dir, index + 1);
     } else {
@@ -158,6 +158,7 @@ process_shadows(uint8_t* shadows, int n, uint8_t* section, int k) {
                 say a0 = a0 –1, and goto Step 4.
             */
             if (val == 256) {
+                is_overflowing = 1;
                 for (int i = 0; i < k; i++) {
                     if (section[i] > 0) {
                         section[i] -= 1;

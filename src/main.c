@@ -1,9 +1,9 @@
 #include <dirent.h>
 #include <stdint.h>
-#include <sys/stat.h>
 #include <stdio.h>
 #include <string.h>
 #include <strings.h>
+#include <sys/stat.h>
 
 #include "algorithm.h"
 #include "args.h"
@@ -45,6 +45,10 @@ main(int argc, char* argv[]) {
     switch (args.mode) {
         case MODE_DISTRIBUTE: {
             BMPImage* img = read_bmp(args.secret_path);
+            if (!img) {
+                print_error(ERR_FILE_NOT_FOUND);
+                return ERR_FILE_NOT_FOUND;
+            }
 
             char s_paths[MAX_CARRIERS][256];
             verify_directory(&args, img, s_paths);
@@ -58,7 +62,7 @@ main(int argc, char* argv[]) {
             distribute(img, args.k, args.n, s_paths, args.output);
             break;
         }
-        case MODE_RECOVER:{
+        case MODE_RECOVER: {
             printf("Recovering secret image...\n");
             char s_paths[MAX_CARRIERS][256];
             if (verify_recovery_directory(&args, args.k, s_paths) < 0) {
