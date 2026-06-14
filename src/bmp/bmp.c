@@ -34,7 +34,6 @@ read_bmp(const char* filename) {
     int32_t width  = info_header.width;
     int32_t height = info_header.height;
 
-    int is_bottom_up = (height > 0);
     if (height < 0)
         height = -height;
 
@@ -49,12 +48,17 @@ read_bmp(const char* filename) {
         Leer bien el valor que indica en qué offset empieza la matriz de píxeles, 
         ya que puede comenzar inmediatamente después de los 54 bytes del encabezado, 
         o bien empezar más adelante.
+        
+        Los píxeles se almacenan en memoria en el mismo orden físico del archivo
+        (fila 0 en memoria = primera fila en el archivo). Para BMP bottom-up esto
+        significa que data[0] es la fila inferior de la imagen visualmente, pero
+        el algoritmo de distribución/recuperación opera sobre bytes en orden físico,
+        por lo que debe ser consistente entre distribute y recover.
     */
     fseek(file, file_header.offset, SEEK_SET);
 
     for (int i = 0; i < height; i++) {
-        int target_row   = is_bottom_up ? (height - 1 - i) : i;
-        uint8_t* row_ptr = &image->data[target_row * width];
+        uint8_t* row_ptr = &image->data[i * width];
 
         fread(row_ptr, sizeof(uint8_t), width, file);
 
@@ -114,8 +118,11 @@ write_bmp(BMPImage* image, const char* filename) {
 
     uint8_t padding_bytes[3] = { 0, 0, 0 };
     for (int i = 0; i < image->height; i++) {
-        int source_row   = image->height - 1 - i;
-        uint8_t* row_ptr = &image->data[source_row * image->width];
+        /*
+         * Los píxeles están en memoria en orden físico (fila 0 = primera fila del archivo).
+         * Escribimos en el mismo orden para mantener consistencia con el algoritmo.
+         */
+        uint8_t* row_ptr = &image->data[i * image->width];
 
         fwrite(row_ptr, sizeof(uint8_t), image->width, file);
 
