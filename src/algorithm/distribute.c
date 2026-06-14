@@ -1,4 +1,3 @@
-
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -220,7 +219,7 @@ save_shadows(char s_paths[MAX_CARRIERS][256], BMPImage* carriers[MAX_CARRIERS], 
         build_output_path(out_filename, sizeof(out_filename), output_dir, i);
 
         write_bmp(carriers[i], out_filename);
-        write_shadow_metadata(out_filename, dist_seed, i);
+        write_shadow_metadata(out_filename, dist_seed, i + 1); /* 1-based shadow ID */
         // write_bmp(carriers[i], s_paths[i]);
         // write_shadow_metadata(s_paths[i], dist_seed, i);
     }

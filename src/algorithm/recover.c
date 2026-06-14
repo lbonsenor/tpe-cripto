@@ -53,6 +53,7 @@ recover(char* out_path, int k, int n, char s_paths[MAX_CARRIERS][256]) {
         Recover seed/indexes
     */
     if (find_shadows_and_seed(s_paths, n, s_imgs, &seed) < 0) {
+        printf("All images were not found, make sure the directory contains ONLY the wanted images");
         for (int i = 0; i < n; i++) {
             free_bmp(s_imgs[i]);
         }
@@ -140,12 +141,16 @@ find_shadows_and_seed(char s_paths[MAX_CARRIERS][256], int n, BMPImage* s_imgs[n
             seed_initialized = 1;
         }
 
-        if (*seed != seed_to_compare || index >= (uint16_t)n || s_imgs[index] != NULL) {
+        /* Shadow IDs are stored 1-based (1..n); convert to 0-based for array indexing */
+        if (index == 0 || index > (uint16_t)n || s_imgs[index - 1] != NULL) {
             free_bmp(shadow);
             return -1;
         }
-        s_imgs[index] = shadow;
+        s_imgs[index - 1] = shadow;
+        printf("Found Image: %s\t Index: %d\n", s_paths[i], index);
     }
+
+    printf("Found Seed: %d", *seed);
 
     return 0;
 }
